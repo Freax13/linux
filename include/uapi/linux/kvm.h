@@ -1975,6 +1975,7 @@ enum sev_cmd_id {
 	KVM_SEV_SNP_LAUNCH_FINISH,
 	KVM_SEV_SNP_GET_CERTS,
 	KVM_SEV_SNP_SET_CERTS,
+	KVM_SEV_SNP_DBG_DECRYPT,
 
 	KVM_SEV_NR_MAX,
 };
@@ -2120,6 +2121,11 @@ struct kvm_sev_snp_launch_finish {
 	__u8 auth_key_en;
 	__u8 host_data[KVM_SEV_SNP_FINISH_DATA_SIZE];
 	__u8 pad[6];
+};
+
+struct kvm_sev_snp_dbg {
+	__u64 src_gfn;
+	__u64 dst_uaddr;
 };
 
 struct kvm_sev_snp_get_certs {
