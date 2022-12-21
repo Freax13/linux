@@ -77,6 +77,7 @@ static unsigned int nr_asids;
 static unsigned long *sev_asid_bitmap;
 static unsigned long *sev_reclaim_asid_bitmap;
 
+static kvm_pfn_t gfn_to_pfn_restricted(struct kvm *kvm, gfn_t gfn);
 static int snp_decommission_context(struct kvm *kvm);
 
 struct enc_region {
@@ -2445,6 +2446,49 @@ static int snp_set_instance_certs(struct kvm *kvm, struct kvm_sev_cmd *argp)
 	return 0;
 }
 
+static int snp_dbg_decrypt(struct kvm *kvm, struct kvm_sev_cmd *argp)
+{
+	struct kvm_sev_info *sev = &to_kvm_svm(kvm)->sev_info;
+	struct kvm_sev_snp_dbg params;
+	kvm_pfn_t src_pfn;
+	struct page *tmp_page;
+	u64 dst_pfn;
+	u64 gctx_pfn;
+	int ret;
+
+	if (!sev_snp_guest(kvm))
+		return -ENOTTY;
+
+	if (!sev->snp_context)
+		return -EINVAL;
+
+	if (copy_from_user(&params, (void __user *)(uintptr_t)argp->data,
+			   sizeof(params)))
+		return -EFAULT;
+
+	gctx_pfn = __pa(sev->snp_context) >> PAGE_SHIFT;
+	src_pfn = gfn_to_pfn_restricted(kvm, params.src_gfn);
+	if (!VALID_PAGE(src_pfn))
+		return src_pfn;
+
+	tmp_page = alloc_page(GFP_KERNEL_ACCOUNT);
+	if (!tmp_page)
+		return -ENOMEM;
+	dst_pfn = page_to_pfn(tmp_page);
+
+	ret = snp_guest_dbg_decrypt_page(gctx_pfn, src_pfn, dst_pfn, &argp->error);
+	if (ret)
+		goto free_tmp_page;
+
+	if (copy_to_user((void __user *)(uintptr_t)params.dst_uaddr, page_address(tmp_page), PAGE_SIZE))
+		ret = -EFAULT;
+
+free_tmp_page:
+	__free_page(tmp_page);
+
+	return ret;
+}
+
 int sev_mem_enc_ioctl(struct kvm *kvm, void __user *argp)
 {
 	struct kvm_sev_cmd sev_cmd;
@@ -2549,6 +2593,9 @@ int sev_mem_enc_ioctl(struct kvm *kvm, void __user *argp)
 		break;
 	case KVM_SEV_SNP_SET_CERTS:
 		r = snp_set_instance_certs(kvm, &sev_cmd);
+		break;
+	case KVM_SEV_SNP_DBG_DECRYPT:
+		r = snp_dbg_decrypt(kvm, &sev_cmd);
 		break;
 	default:
 		r = -EINVAL;
