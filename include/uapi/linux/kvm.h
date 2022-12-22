@@ -1976,6 +1976,7 @@ enum sev_cmd_id {
 	KVM_SEV_SNP_GET_CERTS,
 	KVM_SEV_SNP_SET_CERTS,
 	KVM_SEV_SNP_DBG_DECRYPT,
+	KVM_SEV_SNP_DBG_DECRYPT_VMSA,
 
 	KVM_SEV_NR_MAX,
 };
@@ -2125,6 +2126,11 @@ struct kvm_sev_snp_launch_finish {
 
 struct kvm_sev_snp_dbg {
 	__u64 src_gfn;
+	__u64 dst_uaddr;
+};
+
+struct kvm_sev_snp_dbg_vmsa {
+	__u32 vcpu_id;
 	__u64 dst_uaddr;
 };
 
