@@ -2489,6 +2489,54 @@ free_tmp_page:
 	return ret;
 }
 
+static int snp_dbg_decrypt_vmsa(struct kvm *kvm, struct kvm_sev_cmd *argp)
+{
+	struct kvm_sev_info *sev = &to_kvm_svm(kvm)->sev_info;
+	struct kvm_sev_snp_dbg_vmsa params;
+	struct kvm_vcpu *vcpu;
+	struct vcpu_svm *svm;
+	kvm_pfn_t src_pfn;
+	struct page *tmp_page;
+	u64 dst_pfn;
+	u64 gctx_pfn;
+	int ret;
+
+	if (!sev_snp_guest(kvm))
+		return -ENOTTY;
+
+	if (!sev->snp_context)
+		return -EINVAL;
+
+	if (copy_from_user(&params, (void __user *)(uintptr_t)argp->data,
+			   sizeof(params)))
+		return -EFAULT;
+
+	vcpu = kvm_get_vcpu_by_id(kvm, params.vcpu_id);
+	if (vcpu == NULL)
+		return -EINVAL;
+	svm = to_svm(vcpu);
+	src_pfn = svm->vmcb->control.vmsa_pa >> PAGE_SHIFT;
+
+	gctx_pfn = __pa(sev->snp_context) >> PAGE_SHIFT;
+
+	tmp_page = alloc_page(GFP_KERNEL_ACCOUNT);
+	if (!tmp_page)
+		return -ENOMEM;
+	dst_pfn = page_to_pfn(tmp_page);
+
+	ret = snp_guest_dbg_decrypt_page(gctx_pfn, src_pfn, dst_pfn, &argp->error);
+	if (ret)
+		goto free_tmp_page;
+
+	if (copy_to_user((void __user *)(uintptr_t)params.dst_uaddr, page_address(tmp_page), PAGE_SIZE))
+		ret = -EFAULT;
+
+free_tmp_page:
+	__free_page(tmp_page);
+
+	return ret;
+}
+
 int sev_mem_enc_ioctl(struct kvm *kvm, void __user *argp)
 {
 	struct kvm_sev_cmd sev_cmd;
@@ -2596,6 +2644,9 @@ int sev_mem_enc_ioctl(struct kvm *kvm, void __user *argp)
 		break;
 	case KVM_SEV_SNP_DBG_DECRYPT:
 		r = snp_dbg_decrypt(kvm, &sev_cmd);
+		break;
+	case KVM_SEV_SNP_DBG_DECRYPT_VMSA:
+		r = snp_dbg_decrypt_vmsa(kvm, &sev_cmd);
 		break;
 	default:
 		r = -EINVAL;
