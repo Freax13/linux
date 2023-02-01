@@ -762,6 +762,12 @@ static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
 	}
 }
 
+void kvm_apic_set_isr(struct kvm_vcpu *vcpu, int vec)
+{
+	apic_set_isr(vec, vcpu->arch.apic);
+}
+EXPORT_SYMBOL_GPL(kvm_apic_set_isr);
+
 static inline int apic_find_highest_isr(struct kvm_lapic *apic)
 {
 	int result;
@@ -2440,6 +2446,17 @@ void kvm_lapic_set_eoi(struct kvm_vcpu *vcpu)
 }
 EXPORT_SYMBOL_GPL(kvm_lapic_set_eoi);
 
+void kvm_lapic_set_sw_enable(struct kvm_vcpu *vcpu, bool enable)
+{
+	u32 value = kvm_lapic_get_reg(vcpu->arch.apic, APIC_SPIV);
+	if (enable)
+		value |= APIC_SPIV_APIC_ENABLED;
+	else
+		value &= ~APIC_SPIV_APIC_ENABLED;
+	kvm_lapic_reg_write(vcpu->arch.apic, APIC_SPIV, value);
+}
+EXPORT_SYMBOL_GPL(kvm_lapic_set_sw_enable);
+
 /* emulate APIC access in a trap manner */
 void kvm_apic_write_nodecode(struct kvm_vcpu *vcpu, u32 offset)
 {
@@ -2885,7 +2902,7 @@ void kvm_inject_apic_timer_irqs(struct kvm_vcpu *vcpu)
 	}
 }
 
-int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
+int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu, bool intack)
 {
 	int vector = kvm_apic_has_interrupt(vcpu);
 	struct kvm_lapic *apic = vcpu->arch.apic;
@@ -2893,6 +2910,10 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
 
 	if (vector == -1)
 		return -1;
+
+	if (!intack) {
+		return vector;
+	}
 
 	/*
 	 * We get here even with APIC virtualization enabled, if doing

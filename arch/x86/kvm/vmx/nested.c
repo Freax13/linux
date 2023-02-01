@@ -4863,7 +4863,7 @@ void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 vm_exit_reason,
 	if (likely(!vmx->fail)) {
 		if ((u16)vm_exit_reason == EXIT_REASON_EXTERNAL_INTERRUPT &&
 		    nested_exit_intr_ack_set(vcpu)) {
-			int irq = kvm_cpu_get_interrupt(vcpu);
+			int irq = kvm_cpu_get_interrupt(vcpu, true);
 			WARN_ON(irq < 0);
 			vmcs12->vm_exit_intr_info = irq |
 				INTR_INFO_VALID_MASK | INTR_TYPE_EXT_INTR;

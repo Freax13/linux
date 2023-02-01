@@ -1522,8 +1522,10 @@ static void svm_prepare_switch_to_guest(struct kvm_vcpu *vcpu)
 	struct vcpu_svm *svm = to_svm(vcpu);
 	struct svm_cpu_data *sd = per_cpu_ptr(&svm_data, vcpu->cpu);
 
-	if (sev_es_guest(vcpu->kvm))
+	if (sev_es_guest(vcpu->kvm)) {
 		sev_es_unmap_ghcb(svm);
+		sev_unmap_doorbell_page(svm);
+	}
 
 	if (svm->guest_state_loaded)
 		return;
@@ -3244,6 +3246,26 @@ static int invpcid_interception(struct kvm_vcpu *vcpu)
 	return kvm_handle_invpcid(vcpu, type, gva);
 }
 
+int svm_emulate_halt(struct kvm_vcpu *vcpu) {
+	struct vcpu_svm *svm = to_svm(vcpu);
+	int ret;
+	bool skip_halt = false;
+	 
+	if (sev_es_guest(vcpu->kvm) && sev_restricted_injection_enabled(vcpu->kvm)) {
+		ret = sev_should_skip_halt(svm);
+		if (ret < 0)
+			return ret;
+
+		if (ret)
+			skip_halt = true;
+	}
+	 
+	if (skip_halt)
+		return 1;
+		
+	return kvm_emulate_halt(vcpu);
+}
+
 static int (*const svm_exit_handlers[])(struct kvm_vcpu *vcpu) = {
 	[SVM_EXIT_READ_CR0]			= cr_interception,
 	[SVM_EXIT_READ_CR3]			= cr_interception,
@@ -3286,7 +3308,7 @@ static int (*const svm_exit_handlers[])(struct kvm_vcpu *vcpu) = {
 	[SVM_EXIT_IRET]                         = iret_interception,
 	[SVM_EXIT_INVD]                         = kvm_emulate_invd,
 	[SVM_EXIT_PAUSE]			= pause_interception,
-	[SVM_EXIT_HLT]				= kvm_emulate_halt,
+	[SVM_EXIT_HLT]				= svm_emulate_halt,
 	[SVM_EXIT_INVLPG]			= invlpg_interception,
 	[SVM_EXIT_INVLPGA]			= invlpga_interception,
 	[SVM_EXIT_IOIO]				= io_interception,
@@ -3472,7 +3494,7 @@ int svm_invoke_exit_handler(struct kvm_vcpu *vcpu, u64 exit_code)
 	else if (exit_code == SVM_EXIT_INTR)
 		return intr_interception(vcpu);
 	else if (exit_code == SVM_EXIT_HLT)
-		return kvm_emulate_halt(vcpu);
+		return svm_emulate_halt(vcpu);
 	else if (exit_code == SVM_EXIT_NPF)
 		return npf_interception(vcpu);
 #endif
@@ -3501,6 +3523,7 @@ static int svm_handle_exit(struct kvm_vcpu *vcpu, fastpath_t exit_fastpath)
 	struct vcpu_svm *svm = to_svm(vcpu);
 	struct kvm_run *kvm_run = vcpu->run;
 	u32 exit_code = svm->vmcb->control.exit_code;
+	int ret;
 
 	/* SEV-ES guests must use the CR write traps to track CR registers. */
 	if (!sev_es_guest(vcpu->kvm)) {
@@ -3508,6 +3531,12 @@ static int svm_handle_exit(struct kvm_vcpu *vcpu, fastpath_t exit_fastpath)
 			vcpu->arch.cr0 = svm->vmcb->save.cr0;
 		if (npt_enabled)
 			vcpu->arch.cr3 = svm->vmcb->save.cr3;
+	}
+
+	if (sev_es_guest(vcpu->kvm) && sev_restricted_injection_enabled(vcpu->kvm)) {
+		ret = sev_restricted_injection_check_isr(svm);
+		if (ret < 0)
+			return ret;
 	}
 
 	if (is_guest_mode(vcpu)) {
@@ -3567,6 +3596,12 @@ static void svm_inject_nmi(struct kvm_vcpu *vcpu)
 {
 	struct vcpu_svm *svm = to_svm(vcpu);
 
+	// FIXME: Don't skip stat.
+	if (sev_es_guest(vcpu->kvm) && sev_restricted_injection_enabled(vcpu->kvm)) {
+		sev_inject_restricted_nmi(svm);
+		return;
+	}
+
 	svm->vmcb->control.event_inj = SVM_EVTINJ_VALID | SVM_EVTINJ_TYPE_NMI;
 
 	if (svm->nmi_l1_to_l2)
@@ -3614,6 +3649,12 @@ static void svm_inject_irq(struct kvm_vcpu *vcpu, bool reinjected)
 {
 	struct vcpu_svm *svm = to_svm(vcpu);
 	u32 type;
+
+	// FIXME: Don't skip tracing.
+	if (sev_es_guest(vcpu->kvm) && sev_restricted_injection_enabled(vcpu->kvm)) {
+		sev_inject_restricted_irq(svm, reinjected);
+		return;
+	}
 
 	if (vcpu->arch.interrupt.soft) {
 		if (svm_update_soft_interrupt_rip(vcpu))
@@ -3739,6 +3780,9 @@ bool svm_nmi_blocked(struct kvm_vcpu *vcpu)
 	struct vcpu_svm *svm = to_svm(vcpu);
 	struct vmcb *vmcb = svm->vmcb;
 
+	if (sev_es_guest(vcpu->kvm) && sev_restricted_injection_enabled(vcpu->kvm))
+		return sev_restricted_injection_nmi_blocked(svm);
+
 	if (!gif_set(svm))
 		return true;
 
@@ -3770,6 +3814,9 @@ bool svm_interrupt_blocked(struct kvm_vcpu *vcpu)
 {
 	struct vcpu_svm *svm = to_svm(vcpu);
 	struct vmcb *vmcb = svm->vmcb;
+
+	if (sev_es_guest(vcpu->kvm) && sev_restricted_injection_enabled(vcpu->kvm))
+		return sev_restricted_injection_blocked(svm);
 
 	if (!gif_set(svm))
 		return true;

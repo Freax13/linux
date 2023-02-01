@@ -219,6 +219,13 @@ struct vcpu_sev_es_state {
 	struct mutex snp_vmsa_mutex; /* Used to handle concurrent updates of VMSA. */
 	gpa_t snp_vmsa_gpa;
 	bool snp_ap_create;
+
+	gpa_t snp_doorbell_gpa;
+	bool snp_doorbell_active;
+	bool snp_doorbell_presented_vector;
+	u8 snp_doorbell_last_presented_vector;
+	struct kvm_host_map snp_doorbell_map;
+	struct doorbell_page *snp_doorbell_page;
 };
 
 struct vcpu_svm {
@@ -696,6 +703,8 @@ void avic_refresh_virtual_apic_mode(struct kvm_vcpu *vcpu);
 
 #define GHCB_HV_FT_SUPPORTED	(GHCB_HV_FT_SNP | GHCB_HV_FT_SNP_AP_CREATION)
 
+#define GHCB_HV_DOORBELL_PAGE_GPA_NONE	0xffffffffffffffff
+
 extern unsigned int max_sev_asid;
 
 void sev_vm_destroy(struct kvm *kvm);
@@ -728,6 +737,34 @@ void sev_snp_init_protected_guest_state(struct kvm_vcpu *vcpu);
 int sev_gmem_prepare(struct kvm *kvm, kvm_pfn_t pfn, gfn_t gfn, int max_order);
 void sev_gmem_invalidate(kvm_pfn_t start, kvm_pfn_t end);
 int sev_gmem_max_level(struct kvm *kvm, kvm_pfn_t pfn, gfn_t gfn, u8 *max_level);
+
+void sev_unmap_doorbell_page(struct vcpu_svm *svm);
+static inline int sev_restricted_injection_enabled(struct kvm *kvm) {
+	struct kvm_sev_info *sev = &to_kvm_svm(kvm)->sev_info;
+	return !!(sev->sev_features & SVM_SEV_FEAT_RESTRICTED_INJECTION);
+}
+void sev_inject_restricted_nmi(struct vcpu_svm *svm);
+static inline int sev_restricted_injection_nmi_blocked(struct vcpu_svm *svm) {
+	return !svm->sev_es.snp_doorbell_active;
+}
+void sev_inject_restricted_irq(struct vcpu_svm *svm, bool reinjected);
+int sev_restricted_injection_check_isr(struct vcpu_svm *svm);
+int sev_should_skip_halt(struct vcpu_svm *svm);
+int sev_restricted_injection_blocked(struct vcpu_svm *svm);
+
+struct pending_event {
+	u8 vector : 8 ;
+	bool nmi : 1;
+	bool machine_check : 1;
+	u8 reserved : 5;
+	bool no_further_signal : 1;
+};
+
+struct doorbell_page {
+	struct pending_event pending_event;
+	u8 no_eoi_required;
+	u8 reserved[61];
+} __packed;
 
 /* vmenter.S */
 
