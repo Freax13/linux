@@ -3948,6 +3948,9 @@ static void svm_complete_interrupts(struct kvm_vcpu *vcpu)
 		if (vector == X86_TRAP_VC)
 			break;
 
+		pr_info("exit_int_info=%x exit_info_1=%llx exit_info_2=%llx exit_code=%x\n", svm->vmcb->control.exit_int_info, svm->vmcb->control.exit_info_1, svm->vmcb->control.exit_info_2, svm->vmcb->control.exit_code);
+		break;
+
 		if (exitintinfo & SVM_EXITINTINFO_VALID_ERR) {
 			u32 err = svm->vmcb->control.exit_int_info_err;
 			kvm_requeue_exception_e(vcpu, vector, err);
@@ -3959,6 +3962,9 @@ static void svm_complete_interrupts(struct kvm_vcpu *vcpu)
 		kvm_queue_interrupt(vcpu, vector, false);
 		break;
 	case SVM_EXITINTINFO_TYPE_SOFT:
+		pr_info("exit_int_info=%x exit_info_1=%llx exit_info_2=%llx exit_code=%x\n", svm->vmcb->control.exit_int_info, svm->vmcb->control.exit_info_1, svm->vmcb->control.exit_info_2, svm->vmcb->control.exit_code);
+		break;
+		
 		kvm_queue_interrupt(vcpu, vector, true);
 		break;
 	default:
