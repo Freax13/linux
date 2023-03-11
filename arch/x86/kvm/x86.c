@@ -5641,6 +5641,9 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
 		struct kvm_cpuid2 __user *cpuid_arg = argp;
 		struct kvm_cpuid2 cpuid;
 
+		// Reset all nested page tables.
+		kvm_mmu_reset_context(vcpu);
+		kvm_vcpu_flush_tlb_all(vcpu);
 		r = -EFAULT;
 		if (copy_from_user(&cpuid, cpuid_arg, sizeof(cpuid)))
 			goto out;
