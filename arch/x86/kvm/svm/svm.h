@@ -441,8 +441,8 @@ static inline void set_dr_intercepts(struct vcpu_svm *svm)
 		vmcb_set_intercept(&vmcb->control, INTERCEPT_DR6_WRITE);
 	}
 
-	vmcb_set_intercept(&vmcb->control, INTERCEPT_DR7_READ);
-	vmcb_set_intercept(&vmcb->control, INTERCEPT_DR7_WRITE);
+	// vmcb_set_intercept(&vmcb->control, INTERCEPT_DR7_READ);
+	// vmcb_set_intercept(&vmcb->control, INTERCEPT_DR7_WRITE);
 
 	recalc_intercepts(svm);
 }
