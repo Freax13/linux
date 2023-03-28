@@ -284,6 +284,7 @@ enum avic_ipi_failure_cause {
 #define SVM_SEV_FEAT_INT_INJ_MODES		\
 	(SVM_SEV_FEAT_RESTRICTED_INJECTION |	\
 	 SVM_SEV_FEAT_ALTERNATE_INJECTION)
+#define SVM_SEV_FEAT_VMSA_REG_PROT			BIT(14)
 
 struct vmcb_seg {
 	u16 selector;

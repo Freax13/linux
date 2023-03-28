@@ -844,6 +844,9 @@ static int sev_es_sync_vmsa(struct vcpu_svm *svm)
 				return ret;
 		}
 	}
+	if (sev->snp_init_flags & KVM_SEV_SNP_VMSA_REG_PROT) {
+		save->sev_features |= SVM_SEV_FEAT_VMSA_REG_PROT;
+	}
 
 	/*
 	 * Save the VMSA synced SEV features. For now, they are the same for

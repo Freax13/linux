@@ -458,6 +458,9 @@ The flags bitmap is defined as::
    /* enable the restricted injection timer */
    #define KVM_SEV_SNP_RESTRICTED_TIMER_INJET   (1<<1)
 
+   /* enable the VMSA register protection */
+   #define KVM_SEV_SNP_VMSA_REG_PROT   (1 << 2)
+
 If the specified flags is not supported then return -EOPNOTSUPP, and the supported
 flags are returned.
 

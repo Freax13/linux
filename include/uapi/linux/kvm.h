@@ -2036,6 +2036,9 @@ struct kvm_sev_receive_update_data {
 /* enable the restricted injection timer */
 #define KVM_SEV_SNP_RESTRICTED_TIMER_INJET   (1 << 1)
 
+/* enable the VMSA register protection */
+#define KVM_SEV_SNP_VMSA_REG_PROT   (1 << 2)
+
 struct kvm_snp_init {
 	__u64 flags;
 };
