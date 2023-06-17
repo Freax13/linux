@@ -107,6 +107,9 @@ static void kvm_gmem_invalidate_begin(struct kvm *kvm, struct kvm_gmem *gmem,
 
 	KVM_MMU_LOCK(kvm);
 
+	if (!xa_find(&gmem->bindings, &start, end - 1, XA_PRESENT))
+		goto end;
+
 	kvm_mmu_invalidate_begin(kvm);
 
 	xa_for_each_range(&gmem->bindings, index, slot, start, end - 1) {
@@ -127,6 +130,8 @@ static void kvm_gmem_invalidate_begin(struct kvm *kvm, struct kvm_gmem *gmem,
 
 	if (flush)
 		kvm_flush_remote_tlbs(kvm);
+
+end:
 
 	KVM_MMU_UNLOCK(kvm);
 }
