@@ -2756,11 +2756,14 @@ static void __init mem_init_print_info(void)
 		);
 }
 
+void __init alloc_rmp_init(void);
+
 /*
  * Set up kernel memory allocators
  */
 void __init mm_core_init(void)
 {
+	alloc_rmp_init();
 	/* Initializations relying on SMP setup */
 	build_all_zonelists(NULL);
 	page_alloc_init_cpuhp();
