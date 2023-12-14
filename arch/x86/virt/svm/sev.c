@@ -113,9 +113,48 @@ static __init void snp_enable(void *arg)
 
 #define RMP_ADDR_MASK GENMASK_ULL(51, 13)
 
+static bool __ro_after_init alloc_rmp = false;
+static int __init setalloc_rmp(char *str)
+{
+	alloc_rmp = true;
+	return 0;
+}
+early_param("alloc_rmp", setalloc_rmp);
+
+static u64 allocated_rmp_base = 0;
+static u64 allocated_rmp_end = 0x1ffff;
+
+void __init alloc_rmp_init(void) {
+	u64 calc_rmp_sz, rmp_base, rmp_end;
+
+	if (!alloc_rmp) return;
+
+	pr_info("Allocating memory for the RMP table\n");
+
+	// Calculate the amount the memory to reserve.
+	calc_rmp_sz = ALIGN((max_pfn << 4) + RMPTABLE_CPU_BOOKKEEPING_SZ, HPAGE_SIZE);
+	
+	rmp_base = memblock_phys_alloc(calc_rmp_sz, 0x200000);
+	if (!rmp_base) {
+		pr_err("Failed to allocate memory for the RMP table\n");
+		return;
+	}
+
+	allocated_rmp_base = rmp_base;
+	allocated_rmp_end = rmp_base + calc_rmp_sz - 1;
+
+	return;
+}
+
 bool snp_get_rmptable_info(u64 *start, u64 *len)
 {
 	u64 max_rmp_pfn, calc_rmp_sz, rmp_sz, rmp_base, rmp_end;
+
+	// Setup the allocated RMP table if requested.
+	if (alloc_rmp) {
+		wrmsrl(MSR_AMD64_RMP_BASE, allocated_rmp_base);
+		wrmsrl(MSR_AMD64_RMP_END, allocated_rmp_end);
+	}
 
 	rdmsrl(MSR_AMD64_RMP_BASE, rmp_base);
 	rdmsrl(MSR_AMD64_RMP_END, rmp_end);
