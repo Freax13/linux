@@ -4102,6 +4102,9 @@ static void svm_complete_interrupts(struct kvm_vcpu *vcpu)
 	if (soft_int_injected)
 		svm_complete_soft_interrupt(vcpu, vector, type);
 
+	if (sev_es_guest(vcpu->kvm))
+		return;
+
 	switch (type) {
 	case SVM_EXITINTINFO_TYPE_NMI:
 		vcpu->arch.nmi_injected = true;
