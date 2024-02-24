@@ -108,6 +108,7 @@ static const struct svm_direct_access_msrs {
 	{ .index = MSR_EFER,				.always = false },
 	{ .index = MSR_IA32_CR_PAT,			.always = false },
 	{ .index = MSR_AMD64_SEV_ES_GHCB,		.always = true  },
+	{ .index = MSR_AMD64_GUEST_TSC_FREQ,		.always = false },
 	{ .index = MSR_TSC_AUX,				.always = false },
 	{ .index = MSR_IA32_S_CET,			.always = false },
 	{ .index = MSR_IA32_U_CET,			.always = false },

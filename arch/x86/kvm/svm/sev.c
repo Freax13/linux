@@ -4522,6 +4522,7 @@ static void sev_es_init_vmcb(struct vcpu_svm *svm)
 	set_msr_interception(vcpu, svm->msrpm, MSR_IA32_CR_PAT, 1, 1);
 	set_msr_interception(vcpu, svm->msrpm, MSR_IA32_S_CET, 1, 1);
 	set_msr_interception(vcpu, svm->msrpm, MSR_IA32_U_CET, 1, 1);
+	set_msr_interception(vcpu, svm->msrpm, MSR_AMD64_GUEST_TSC_FREQ, 1, 1);
 }
 
 void sev_init_vmcb(struct vcpu_svm *svm)
