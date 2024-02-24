@@ -666,6 +666,8 @@
 #define MSR_AMD64_RMP_BASE		0xc0010132
 #define MSR_AMD64_RMP_END		0xc0010133
 
+#define MSR_AMD64_GUEST_TSC_FREQ	0xc0010134
+
 #define MSR_SVSM_CAA			0xc001f000
 
 /* AMD Collaborative Processor Performance Control MSRs */
