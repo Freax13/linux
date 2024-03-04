@@ -141,6 +141,8 @@ bool tdx_is_vm_type_supported(unsigned long type);
 int tdx_offline_cpu(void);
 
 int tdx_vm_enable_cap(struct kvm *kvm, struct kvm_enable_cap *cap);
+bool tdx_is_irq_event_pt(struct kvm *kvm);
+
 int tdx_vm_init(struct kvm *kvm);
 void tdx_mmu_release_hkid(struct kvm *kvm);
 void tdx_vm_free(struct kvm *kvm);
