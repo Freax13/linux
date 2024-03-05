@@ -27,6 +27,8 @@
 #define TDVMCALL_GET_QUOTE		0x10002
 #define TDVMCALL_REPORT_FATAL_ERROR	0x10003
 
+#define TDVMCALL_STATUS_RETRY          1
+
 /*
  * TDG.VP.VMCALL Status Codes (returned in R10)
  */
