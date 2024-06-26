@@ -2182,6 +2182,9 @@ e_free_context:
 
 struct sev_gmem_populate_args {
 	__u8 type;
+	__u8 vmpl1_perms;
+	__u8 vmpl2_perms;
+	__u8 vmpl3_perms;
 	int sev_fd;
 	int fw_error;
 };
@@ -2238,6 +2241,9 @@ static int sev_gmem_post_populate(struct kvm *kvm, gfn_t gfn_start, kvm_pfn_t pf
 		fw_args.address = __sme_set(pfn_to_hpa(pfn + i));
 		fw_args.page_size = PG_LEVEL_TO_RMP(PG_LEVEL_4K);
 		fw_args.page_type = sev_populate_args->type;
+		fw_args.vmpl1_perms = sev_populate_args->vmpl1_perms;
+		fw_args.vmpl2_perms = sev_populate_args->vmpl2_perms;
+		fw_args.vmpl3_perms = sev_populate_args->vmpl3_perms;
 
 		ret = __sev_issue_cmd(sev_populate_args->sev_fd, SEV_CMD_SNP_LAUNCH_UPDATE,
 				      &fw_args, &sev_populate_args->fw_error);
@@ -2342,6 +2348,9 @@ static int snp_launch_update(struct kvm *kvm, struct kvm_sev_cmd *argp)
 
 	sev_populate_args.sev_fd = argp->sev_fd;
 	sev_populate_args.type = params.type;
+	sev_populate_args.vmpl1_perms = params.vmpl1_perms;
+	sev_populate_args.vmpl2_perms = params.vmpl2_perms;
+	sev_populate_args.vmpl3_perms = params.vmpl3_perms;
 	src = params.type == KVM_SEV_SNP_PAGE_TYPE_ZERO ? NULL : u64_to_user_ptr(params.uaddr);
 
 	count = kvm_gmem_populate(kvm, params.gfn_start, src, npages,

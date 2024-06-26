@@ -852,7 +852,10 @@ struct kvm_sev_snp_launch_update {
 	__u8 type;
 	__u8 pad0;
 	__u16 flags;
-	__u32 pad1;
+	__u8 vmpl1_perms;
+	__u8 vmpl2_perms;
+	__u8 vmpl3_perms;
+	__u8 pad1;
 	__u64 pad2[4];
 };
 
