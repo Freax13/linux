@@ -3005,7 +3005,7 @@ out:
 	    !cpu_feature_enabled(X86_FEATURE_NO_NESTED_DATA_BP))
 		sev_es_debug_swap_enabled = false;
 
-	sev_supported_vmsa_features = 0;
+	sev_supported_vmsa_features = SVM_SEV_FEAT_RESTRICTED_INJECTION | SVM_SEV_FEAT_VMSA_REGISTER_PROTECTION;
 	if (sev_es_debug_swap_enabled)
 		sev_supported_vmsa_features |= SVM_SEV_FEAT_DEBUG_SWAP;
 }
