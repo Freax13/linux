@@ -1542,20 +1542,35 @@ static int tdx_emulate_rdmsr(struct kvm_vcpu *vcpu)
 	return 1;
 }
 
+static int tdx_complete_wrmsr(struct kvm_vcpu *vcpu)
+{
+	if (vcpu->run->msr.error) {
+		tdvmcall_set_return_code(vcpu, TDVMCALL_INVALID_OPERAND);
+	} else {
+		tdvmcall_set_return_code(vcpu, TDVMCALL_SUCCESS);
+	}
+	return 1;
+}
+
 static int tdx_emulate_wrmsr(struct kvm_vcpu *vcpu)
 {
 	u32 index = tdvmcall_a0_read(vcpu);
 	u64 data = tdvmcall_a1_read(vcpu);
 
-	if (!kvm_msr_allowed(vcpu, index, KVM_MSR_FILTER_WRITE) ||
-	    kvm_set_msr(vcpu, index, data)) {
-		trace_kvm_msr_write_ex(index, data);
-		tdvmcall_set_return_code(vcpu, TDVMCALL_INVALID_OPERAND);
+	int r = kvm_set_msr_with_filter(vcpu, index, data);
+	if (!r) {
+		trace_kvm_msr_write(index, data);
+		tdvmcall_set_return_code(vcpu, TDVMCALL_SUCCESS);
 		return 1;
 	}
 
-	trace_kvm_msr_write(index, data);
-	tdvmcall_set_return_code(vcpu, TDVMCALL_SUCCESS);
+	/* MSR write failed? See if we should ask user space */
+	if (kvm_msr_user_space(vcpu, index, KVM_EXIT_X86_WRMSR, data,
+			       tdx_complete_wrmsr, r))
+		return 0;
+	
+	trace_kvm_msr_write_ex(index, data);
+	tdvmcall_set_return_code(vcpu, TDVMCALL_INVALID_OPERAND);
 	return 1;
 }
 
