@@ -5586,6 +5586,26 @@ bool sev_snp_blocked(enum inject_type type, struct kvm_vcpu *vcpu)
 	return blocked;
 }
 
+bool sev_snp_emulate_halt(struct kvm_vcpu *vcpu)
+{
+	struct kvm_host_map hvdb_map;
+	struct hvdb *hvdb;
+	bool skip_hlt;
+
+	if (!sev_snp_is_rinj_active(vcpu))
+		return false;
+
+	hvdb = map_hvdb(vcpu, &hvdb_map);
+	if (!hvdb)
+		return false;
+
+	skip_hlt = !!hvdb->events.pending_events;
+
+	unmap_hvdb(vcpu, &hvdb_map);
+
+	return skip_hlt;
+}
+
 int sev_pending_event_higher_vmpl(struct kvm_vcpu *vcpu)
 {
 	struct kvm_vcpu_vmpl_state *vcpu_parent = vcpu->vcpu_parent;

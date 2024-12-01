@@ -2625,6 +2625,14 @@ static int iret_interception(struct kvm_vcpu *vcpu)
 	return 1;
 }
 
+static int svm_emulate_halt(struct kvm_vcpu *vcpu)
+{
+	if (sev_snp_emulate_halt(vcpu))
+		return 1;
+
+	return kvm_emulate_halt(vcpu);
+}
+
 static int invlpg_interception(struct kvm_vcpu *vcpu)
 {
 	if (!static_cpu_has(X86_FEATURE_DECODEASSISTS))
@@ -3350,7 +3358,7 @@ static int (*const svm_exit_handlers[])(struct kvm_vcpu *vcpu) = {
 	[SVM_EXIT_IRET]                         = iret_interception,
 	[SVM_EXIT_INVD]                         = kvm_emulate_invd,
 	[SVM_EXIT_PAUSE]			= pause_interception,
-	[SVM_EXIT_HLT]				= kvm_emulate_halt,
+	[SVM_EXIT_HLT]				= svm_emulate_halt,
 	[SVM_EXIT_INVLPG]			= invlpg_interception,
 	[SVM_EXIT_INVLPGA]			= invlpga_interception,
 	[SVM_EXIT_IOIO]				= io_interception,
@@ -3538,7 +3546,7 @@ int svm_invoke_exit_handler(struct kvm_vcpu *vcpu, u64 exit_code)
 	else if (exit_code == SVM_EXIT_INTR)
 		return intr_interception(vcpu);
 	else if (exit_code == SVM_EXIT_HLT)
-		return kvm_emulate_halt(vcpu);
+		return svm_emulate_halt(vcpu);
 	else if (exit_code == SVM_EXIT_NPF)
 		return npf_interception(vcpu);
 #endif

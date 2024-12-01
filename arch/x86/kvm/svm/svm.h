@@ -801,6 +801,7 @@ static inline bool sev_snp_is_rinj_active(struct kvm_vcpu *vcpu)
 	return sev_snp_guest(vcpu->kvm) &&
 		(sev->vmsa_features[vcpu->vmpl] & SVM_SEV_FEAT_RESTRICTED_INJECTION);
 };
+bool sev_snp_emulate_halt(struct kvm_vcpu *vcpu);
 int sev_pending_event_higher_vmpl(struct kvm_vcpu *vcpu);
 #else
 static inline struct page *snp_safe_alloc_page_node(int node, gfp_t gfp)
@@ -837,6 +838,7 @@ static inline bool sev_snp_inject(enum inject_type type, struct kvm_vcpu *vcpu) 
 static inline void sev_snp_cancel_injection(struct kvm_vcpu *vcpu) {}
 static inline bool sev_snp_blocked(enum inject_type type, struct kvm_vcpu *vcpu) { return false; }
 static inline bool sev_snp_is_rinj_active(struct kvm_vcpu *vcpu) { return false; }
+static inline bool sev_snp_emulate_halt(struct kvm_vcpu *vcpu) { return false; }
 #endif
 
 /* vmenter.S */
