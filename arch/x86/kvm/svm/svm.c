@@ -3046,6 +3046,9 @@ static int svm_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr)
 	struct vcpu_svm *svm = to_svm(vcpu);
 	int ret = 0;
 
+	int vtl;
+	struct kvm_vcpu_vmpl_state *vcpu_parent = vcpu->vcpu_parent;
+
 	u32 ecx = msr->index;
 	u64 data = msr->data;
 
@@ -3193,7 +3196,11 @@ static int svm_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr)
 		if (ret)
 			break;
 
-		svm->tsc_aux = data;
+		for (vtl = 0; vtl <= vcpu_parent->max_vmpl; ++vtl) {
+			vcpu = vcpu_parent->vcpu_vmpl[vtl];
+			svm = to_svm(vcpu);
+			svm->tsc_aux = data;
+		}
 		break;
 	case MSR_IA32_DEBUGCTLMSR:
 		if (!lbrv) {
