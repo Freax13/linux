@@ -767,6 +767,7 @@ int sev_vm_copy_enc_context_from(struct kvm *kvm, unsigned int source_fd);
 int sev_vm_move_enc_context_from(struct kvm *kvm, unsigned int source_fd);
 void sev_guest_memory_reclaimed(struct kvm *kvm);
 int sev_handle_vmgexit(struct kvm_vcpu *vcpu);
+int sev_vc_interception(struct kvm_vcpu *vcpu);
 
 /* These symbols are used in common code and are stubbed below.  */
 
