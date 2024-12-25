@@ -137,6 +137,7 @@
 #define SVM_EXIT_SW				0xf0000000
 
 #define SVM_EXIT_ERR           -1
+#define SVM_EXIT_BUSY          -2
 
 #define SVM_EXIT_REASONS \
 	{ SVM_EXIT_READ_CR0,    "read_cr0" }, \
@@ -247,7 +248,8 @@
 	{ SVM_VMGEXIT_EXT_GUEST_REQUEST, "vmgexit_ext_guest_request" }, \
 	{ SVM_VMGEXIT_AP_CREATION,	"vmgexit_ap_creation" }, \
 	{ SVM_VMGEXIT_HV_FEATURES,	"vmgexit_hypervisor_feature" }, \
-	{ SVM_EXIT_ERR,         "invalid_guest_state" }
+	{ SVM_EXIT_ERR,         "invalid_guest_state" }, \
+	{ SVM_EXIT_BUSY, 	"busy" }
 
 
 #endif /* _UAPI__SVM_H */

@@ -4858,6 +4858,13 @@ int sev_vc_interception(struct kvm_vcpu *vcpu)
 	return 1;
 }
 
+int sev_handle_busy_exit(struct kvm_vcpu *vcpu)
+{
+	struct vcpu_svm *svm = to_svm(vcpu);
+	__sev_run_vmpl_vmsa(svm, 0);
+	return 1;
+}
+
 int sev_es_string_io(struct vcpu_svm *svm, int size, unsigned int port, int in)
 {
 	int count;

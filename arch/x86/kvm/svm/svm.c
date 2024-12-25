@@ -3531,6 +3531,9 @@ static bool svm_check_exit_valid(u64 exit_code)
 
 static int svm_handle_invalid_exit(struct kvm_vcpu *vcpu, u64 exit_code)
 {
+	if (exit_code == SVM_EXIT_BUSY)
+		return sev_handle_busy_exit(vcpu);
+
 	vcpu_unimpl(vcpu, "svm: unexpected exit reason 0x%llx\n", exit_code);
 	dump_vmcb(vcpu);
 	vcpu->common->run->exit_reason = KVM_EXIT_INTERNAL_ERROR;
