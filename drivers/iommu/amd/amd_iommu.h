@@ -12,6 +12,7 @@
 #include "amd_iommu_types.h"
 
 extern int amd_iommu_evtlog_size;
+extern int amd_iommu_pprlog_size;
 
 irqreturn_t amd_iommu_int_thread(int irq, void *data);
 irqreturn_t amd_iommu_int_thread_evtlog(int irq, void *data);
@@ -77,7 +78,6 @@ int amd_iommu_clear_gcr3(struct iommu_dev_data *dev_data, ioasid_t pasid);
 
 /* PPR */
 int __init amd_iommu_alloc_ppr_log(struct amd_iommu *iommu);
-void __init amd_iommu_free_ppr_log(struct amd_iommu *iommu);
 void amd_iommu_enable_ppr_log(struct amd_iommu *iommu);
 void amd_iommu_poll_ppr_log(struct amd_iommu *iommu);
 int amd_iommu_complete_ppr(struct device *dev, u32 pasid, int status, int tag);
